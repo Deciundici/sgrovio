@@ -1,1 +1,35 @@
-
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sgrovio — Professionisti locali</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#faf9f6;color:#171717}.w{max-width:950px;margin:auto;padding:0 20px}
+header{background:#fff;border-bottom:1px solid #e7e3dc;padding:18px 0;position:sticky;top:0}.nav{display:flex;justify-content:space-between}.logo{font-size:25px;font-weight:900}
+a{color:inherit}.hero{text-align:center;padding:65px 0 45px}.tag{background:#fff;border:1px solid #e7e3dc;padding:8px 12px;border-radius:30px;font-size:13px}
+h1{font-size:clamp(40px,8vw,70px);line-height:1;letter-spacing:-.05em;margin:24px auto 18px;max-width:850px}p{color:#666;line-height:1.55}
+.btn{display:inline-block;text-decoration:none;border:1px solid #171717;border-radius:12px;padding:14px 18px;margin:5px;font-weight:750}.dark{background:#171717;color:#fff}
+section{padding:35px 0}h2{font-size:30px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.card,.panel{background:#fff;border:1px solid #e7e3dc;border-radius:17px;padding:20px}.card b{display:block;margin-top:20px}
+.panel{margin:20px 0;padding:28px}form{display:grid;gap:13px}.row{display:grid;grid-template-columns:1fr 1fr;gap:13px}label{font-size:13px;font-weight:700}
+input,select,textarea{width:100%;padding:13px;margin-top:6px;border:1px solid #d8d3ca;border-radius:10px;font:inherit}textarea{min-height:110px}button{padding:14px;border:0;border-radius:11px;background:#171717;color:#fff;font-weight:800}
+footer{padding:40px 0 70px;color:#777;font-size:13px}@media(max-width:720px){.grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><div class="w nav"><div class="logo">Sgrovio</div><a href="#professionisti">Sei un professionista?</a></div></header>
+<main>
+<div class="w hero"><span class="tag">📍 Viadana e dintorni</span><h1>Un lavoro da fare?<br>Sgrovio trova chi può farlo.</h1>
+<p>Descrivi quello che ti serve. Ti mettiamo in contatto con professionisti della tua zona.</p>
+<a class="btn dark" href="#richiesta">Trova un professionista</a><a class="btn" href="#professionisti">Sono un professionista</a></div>
+<section><div class="w"><h2>Da cosa hai bisogno?</h2><div class="grid">
+<div class="card">📦<b>Sgomberi e traslochi</b></div><div class="card">🌿<b>Giardinaggio</b></div><div class="card">✨<b>Pulizie</b></div><div class="card">🖌️<b>Tinteggiatura</b></div><div class="card">🔧<b>Piccoli lavori</b></div>
+</div></div></section>
+<section id="richiesta"><div class="w panel"><h2>Richiedi un professionista</h2><p>Raccontaci il lavoro. In questa prima fase Sgrovio gestirà il contatto manualmente.</p>
+<form onsubmit="event.preventDefault();alert('Modulo demo: nel prossimo passaggio collegheremo la raccolta dati.')">
+<div class="row"><label>Servizio<select required><option value="">Seleziona</option><option>Sgomberi e traslochi</option><option>Giardinaggio</option><option>Pulizie</option><option>Tinteggiatura</option><option>Piccoli lavori</option></select></label><label>Comune o CAP<input required placeholder="Es. Viadana"></label></div>
+<label>Descrivi cosa ti serve<textarea required></textarea></label><div class="row"><label>Nome<input required></label><label>Telefono / WhatsApp<input required></label></div><button>Invia richiesta</button></form></div></section>
+<section id="professionisti"><div class="w panel"><h2>Sei un professionista?</h2><p>Entra nella rete iniziale di Sgrovio e ricevi richieste compatibili con il tuo servizio e la tua zona.</p>
+<form onsubmit="event.preventDefault();alert('Modulo demo: nel prossimo passaggio collegheremo la raccolta dati.')">
+<div class="row"><label>Nome / attività<input required></label><label>Telefono<input required></label></div><div class="row"><label>Servizio<input required></label><label>Zone servite<input required placeholder="Viadana, Guastalla..."></label></div><button>Candidati</button></form></div></section>
+</main>
+<footer><div class="w"><b>Sgrovio</b> — MVP locale, Viadana (MN) e dintorni.<br>Prima del lancio pubblico completeremo privacy, consenso e raccolta dati.</div></footer>
+</body></html>

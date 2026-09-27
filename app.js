@@ -68,7 +68,7 @@ if (clientForm) {
       showResult('okC', 'Richiesta ricevuta. Abbiamo salvato i dati necessari per avviare la ricerca.');
     } catch (error) {
       console.error('Supabase richieste:', error);
-      showResult('okC', 'Riprova tra poco. Se il problema continua, contatta Sgrovio.', false);
+      showResult('okC', 'ERRORE SUPABASE: ' + error.message, false);
     } finally {
       setBusy(clientForm, false);
     }

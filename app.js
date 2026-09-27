@@ -1,6 +1,33 @@
 const SUPABASE_URL = 'https://nijsfyysxvqogjjfawrc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_YBMEKwWJCtTZsiRBS45hGQ_sDogz1SE';
 
+// Mantiene sincronizzati i servizi nei due menu senza dover duplicare la logica nell'HTML.
+const SERVIZI_SGROVIO = [
+  'Sgomberi e traslochi',
+  'Giardinaggio',
+  'Idraulico',
+  'Elettricista',
+  'Fabbro',
+  'Muratore',
+  'Imbianchino',
+  'Manutenzione caldaie/climatizzatori',
+  'Pulizie',
+  'Tinteggiatura',
+  'Piccoli lavori',
+  'Altro'
+];
+
+function aggiornaMenuServizi() {
+  document.querySelectorAll('select[name="Servizio"]').forEach((select) => {
+    const valoreAttuale = select.value;
+    select.innerHTML = '<option value="">Seleziona</option>' +
+      SERVIZI_SGROVIO.map(servizio => `<option>${servizio}</option>`).join('');
+    if (SERVIZI_SGROVIO.includes(valoreAttuale)) select.value = valoreAttuale;
+  });
+}
+
+aggiornaMenuServizi();
+
 async function insertSupabase(table, payload) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
@@ -53,18 +80,18 @@ if (clientForm) {
     const fd = new FormData(clientForm);
     try {
       const nuovaRichiesta = await insertSupabase('richieste', {
-  nome_cliente: value(fd, 'Nome'),
-  email: value(fd, 'email') || '',
-  telefono: value(fd, 'Telefono') || null,
-  categoria: value(fd, 'Servizio'),
-  descrizione: value(fd, 'Descrizione'),
-  comune: value(fd, 'Comune') || null,
-cap: value(fd, 'CAP'),
-  provincia: 'MN',
-  budget: value(fd, 'Budget') || null,
-  urgenza: value(fd, 'Tempistica'),
-  stato: 'nuova'
-});
+        nome_cliente: value(fd, 'Nome'),
+        email: value(fd, 'email') || '',
+        telefono: value(fd, 'Telefono') || null,
+        categoria: value(fd, 'Servizio'),
+        descrizione: value(fd, 'Descrizione'),
+        comune: value(fd, 'Comune') || null,
+        cap: value(fd, 'CAP'),
+        provincia: 'MN',
+        budget: value(fd, 'Budget') || null,
+        urgenza: value(fd, 'Tempistica'),
+        stato: 'nuova'
+      });
       clientForm.reset();
       showResult('okC', 'Richiesta ricevuta. Abbiamo salvato i dati necessari per avviare la ricerca.');
     } catch (error) {

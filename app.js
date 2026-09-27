@@ -59,7 +59,7 @@ if (clientForm) {
   categoria: value(fd, 'Servizio'),
   descrizione: value(fd, 'Descrizione'),
   comune: value(fd, 'Comune') || null,
-cap: value(fd, 'Zona'),
+cap: value(fd, 'CAP'),
   provincia: 'MN',
   budget: value(fd, 'Budget') || null,
   urgenza: value(fd, 'Tempistica'),

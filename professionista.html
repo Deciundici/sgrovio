@@ -225,14 +225,27 @@ async function startDashboard() {
       .eq('user_id', user.id)
       .single();
 
-  if (error || !professionista) {
-    await db.auth.signOut();
+  if (error) {
+  console.error('ERRORE PROFESSIONISTA:', error);
 
-    loginMessage.textContent =
-      'Questo account non è collegato a un professionista Sgrovio.';
+  await db.auth.signOut();
 
-    showLogin(false);
-    return;
+  loginMessage.textContent =
+    'Errore database: ' + error.message;
+
+  showLogin();
+  return;
+}
+
+if (!professionista) {
+  await db.auth.signOut();
+
+  loginMessage.textContent =
+    'Questo account non è collegato a un professionista Sgrovio.';
+
+  showLogin();
+  return;
+}
   }
 
   loginSection.style.display = 'none';

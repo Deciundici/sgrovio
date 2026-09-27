@@ -16,6 +16,42 @@ function aggiornaMenuServizi() {
 }
 aggiornaMenuServizi();
 
+// Rende chiaro dalla home che candidatura e accesso sono due azioni diverse.
+function aggiungiAccessoProfessionista() {
+  const nav = document.querySelector('.nav');
+  const navPro = nav?.querySelector('.navlink');
+  if (nav && navPro) {
+    navPro.textContent = 'Area Professionista';
+    navPro.href = 'professionista.html';
+  }
+
+  const heroActions = document.querySelector('.hero .actions');
+  if (heroActions) {
+    const candidatura = [...heroActions.querySelectorAll('a')]
+      .find(a => a.getAttribute('href') === '#professionisti');
+    if (candidatura) candidatura.textContent = 'Candidati come professionista';
+
+    if (!heroActions.querySelector('a[href="professionista.html"]')) {
+      const login = document.createElement('a');
+      login.className = 'btn secondary';
+      login.href = 'professionista.html';
+      login.textContent = 'Accedi all’Area Professionista';
+      heroActions.appendChild(login);
+    }
+  }
+
+  const proPanel = document.querySelector('#professionisti .panel');
+  const proHead = proPanel?.querySelector('.panelhead');
+  if (proPanel && proHead && !proPanel.querySelector('.pro-login-link')) {
+    const box = document.createElement('div');
+    box.className = 'pro-login-link';
+    box.style.cssText = 'margin:0 0 22px;padding:16px 18px;border:1px solid #e4dfd6;border-radius:14px;background:#f7f5f0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap';
+    box.innerHTML = '<span><b>Sei già registrato?</b> Accedi per vedere le richieste compatibili.</span><a class="btn secondary" href="professionista.html">Accedi all’Area Professionista</a>';
+    proPanel.insertBefore(box, proHead);
+  }
+}
+aggiungiAccessoProfessionista();
+
 async function insertSupabase(table, payload) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
@@ -68,7 +104,6 @@ function showResult(id, message, ok = true) {
 const clientForm = document.querySelector('#richiesta form.formgrid');
 const proForm = document.querySelector('#professionisti form.formgrid');
 
-// Aggiunge al form professionista le credenziali necessarie per l'Area Professionista.
 if (proForm && !proForm.querySelector('[name="Password"]')) {
   const consenso = proForm.querySelector('.check');
   const row = document.createElement('div');

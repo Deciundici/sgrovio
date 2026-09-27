@@ -23,10 +23,28 @@ function aggiungiAccessoProfessionista() {
     navPro.textContent = 'Area Professionista';
     navPro.href = 'professionista.html';
   }
+  if (nav && !nav.querySelector('a[href="cliente.html"]')) {
+    const navCliente = document.createElement('a');
+    navCliente.className = 'navlink nav-client-link';
+    navCliente.href = 'cliente.html';
+    navCliente.textContent = 'Area Cliente';
+    if (navPro) nav.insertBefore(navCliente, navPro);
+    else nav.appendChild(navCliente);
+  }
+
   const heroActions = document.querySelector('.hero .actions');
   if (heroActions) {
     const candidatura = [...heroActions.querySelectorAll('a')].find(a => a.getAttribute('href') === '#professionisti');
     if (candidatura) candidatura.textContent = 'Candidati come professionista';
+
+    if (!heroActions.querySelector('a[href="cliente.html"]')) {
+      const loginCliente = document.createElement('a');
+      loginCliente.className = 'btn secondary';
+      loginCliente.href = 'cliente.html';
+      loginCliente.textContent = 'Accedi all’Area Cliente';
+      heroActions.appendChild(loginCliente);
+    }
+
     if (!heroActions.querySelector('a[href="professionista.html"]')) {
       const login = document.createElement('a');
       login.className = 'btn secondary';

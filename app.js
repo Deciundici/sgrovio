@@ -42,12 +42,18 @@ async function insertSupabase(table, payload) {
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(detail || `HTTP ${response.status}`);
-  } return true;
+  }
+  return true;
 }
 
 function value(fd, name) {
   const v = fd.get(name);
   return typeof v === 'string' ? v.trim() : '';
+}
+
+function parseRaggio(raw) {
+  const match = String(raw || '').match(/\d+/);
+  return match ? Number(match[0]) : 20;
 }
 
 function setBusy(form, busy) {
@@ -68,7 +74,6 @@ function showResult(id, message, ok = true) {
   box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-const forms = document.querySelectorAll('form.formgrid');
 const clientForm = document.querySelector('#richiesta form.formgrid');
 const proForm = document.querySelector('#professionisti form.formgrid');
 
@@ -79,7 +84,7 @@ if (clientForm) {
     setBusy(clientForm, true);
     const fd = new FormData(clientForm);
     try {
-      const nuovaRichiesta = await insertSupabase('richieste', {
+      await insertSupabase('richieste', {
         nome_cliente: value(fd, 'Nome'),
         email: value(fd, 'email') || '',
         telefono: value(fd, 'Telefono') || null,
@@ -110,19 +115,25 @@ if (proForm) {
     setBusy(proForm, true);
     const fd = new FormData(proForm);
     try {
+      const nome = value(fd, 'Nome_attivita');
+      const email = value(fd, 'email');
+      const categoria = value(fd, 'Servizio');
+      const comune = value(fd, 'Zone_servite');
+
       await insertSupabase('professionisti', {
-        nome_attivita: value(fd, 'Nome_attivita'),
-        telefono: value(fd, 'Telefono'),
-        email: value(fd, 'email'),
-        servizio: value(fd, 'Servizio'),
-        altri_servizi: value(fd, 'Altri_servizi') || null,
-        zone_servite: value(fd, 'Zone_servite'),
-        raggio_massimo: value(fd, 'Raggio_massimo'),
-        disponibilita: value(fd, 'Disponibilita'),
-        partita_iva: value(fd, 'Partita_IVA') || null,
-        descrizione_attivita: value(fd, 'Descrizione_attivita') || null,
-        consenso_contatto: fd.has('Consenso_contatto')
+        nome,
+        email,
+        telefono: value(fd, 'Telefono') || null,
+        attivita: nome,
+        categoria,
+        comune,
+        provincia: 'MN',
+        raggio_km: parseRaggio(value(fd, 'Raggio_massimo')),
+        disponibile: true,
+        verificato: false,
+        stato: 'in_attesa'
       });
+
       proForm.reset();
       showResult('okP', 'Candidatura ricevuta. La tua attività è stata salvata nella rete iniziale di Sgrovio.');
     } catch (error) {

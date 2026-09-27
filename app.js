@@ -8,15 +8,14 @@ async function insertSupabase(table, payload) {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      Prefer: 'return=representation'
+      Prefer: 'return=minimal'
     },
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(detail || `HTTP ${response.status}`);
-  } const data = await response.json();
-return data[0];
+  } return true;
 }
 
 function value(fd, name) {

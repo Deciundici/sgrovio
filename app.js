@@ -134,6 +134,17 @@ function showResult(id,message,ok=true){
   box.innerHTML=ok?`<b>✓ ${message}</b>`:`<b>Invio non riuscito.</b><br>${message}`;
   box.scrollIntoView({behavior:'smooth',block:'center'});
 }
+function showClientSuccess(){
+  const box=document.getElementById('okC');
+  if(!box)return;
+  box.style.display='block';
+  box.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+      <div><b>✓ Richiesta ricevuta e collegata al tuo account.</b><br><span>Puoi seguirne lo stato dalla tua Area Cliente.</span></div>
+      <a href="cliente.html" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#171717;color:#fff;text-decoration:none;font-weight:800">Vai all’Area Cliente</a>
+    </div>`;
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+}
 
 const clientForm=document.querySelector('#richiesta form.formgrid');
 const proForm=document.querySelector('#professionisti form.formgrid');
@@ -203,7 +214,7 @@ if(clientForm){
         stato:'nuova'
       },session.access_token);
       clientForm.reset();
-      showResult('okC','Richiesta ricevuta e collegata al tuo account. <a href="cliente.html">Apri l’Area Cliente</a> per seguirla.');
+      showClientSuccess();
     }catch(error){
       const msg=String(error.message||error);
       showResult('okC',msg,false);

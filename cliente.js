@@ -1,11 +1,46 @@
 const SUPABASE_URL='https://nijsfyysxvqogjjfawrc.supabase.co';
 const SUPABASE_KEY='sb_publishable_YBMEKwWJCtTZsiRBS45hGQ_sDogz1SE';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const results=document.getElementById('results');
-const message=document.getElementById('message');
 
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function loginView(){results.innerHTML=`<div class="card"><h2>Accedi all’Area Cliente</h2><p class="muted">Usa email e password del tuo account Sgrovio.</p><input id="email" type="email" placeholder="Email"><input id="password" type="password" placeholder="Password"><button id="login">Accedi</button></div>`;document.getElementById('login').onclick=login;}
-async function login(){message.textContent='Accesso…';const {error}=await sb.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});if(error){message.textContent=error.message;return;}message.textContent='';load();}
-async function load(){const {data:{user}}=await sb.auth.getUser();if(!user){loginView();return;}document.querySelector('.card').innerHTML=`<h1>Le tue richieste</h1><p class="muted">Account: ${esc(user.email)}</p><button id="logout">Esci</button>`;document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();location.reload();};const {data,error}=await sb.from('richieste').select('*').eq('user_id',user.id).order('created_at',{ascending:false});if(error){results.innerHTML=`<div class="card">${esc(error.message)}</div>`;return;}if(!data?.length){results.innerHTML='<div class="card">Non ci sono ancora richieste collegate a questo account.</div>';return;}results.innerHTML=data.map(r=>`<div class="card"><span class="pill">${esc(r.stato||'nuova')}</span><h2>${esc(r.categoria)}</h2><p><b>Zona:</b> ${esc(r.comune||'')} ${r.cap?'('+esc(r.cap)+')':''}</p><p><b>Descrizione:</b><br>${esc(r.descrizione)}</p><p><b>Urgenza:</b> ${esc(r.urgenza||'Non indicata')}</p><p><b>Budget:</b> ${esc(r.budget||'Non indicato')}</p></div>`).join('');}
-load();
+const loginView=document.getElementById('loginView');
+const accountView=document.getElementById('accountView');
+const emailInput=document.getElementById('email');
+const passwordInput=document.getElementById('password');
+const message=document.getElementById('message');
+const accountEmail=document.getElementById('accountEmail');
+
+document.getElementById('loginBtn').addEventListener('click',login);
+document.getElementById('logoutBtn').addEventListener('click',logout);
+passwordInput.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+
+async function login(){
+  message.textContent='';
+  const email=emailInput.value.trim();
+  const password=passwordInput.value;
+  if(!email||!password){message.textContent='Inserisci email e password.';return;}
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){message.textContent='Accesso non riuscito: '+error.message;return;}
+  showAccount(data.user);
+}
+
+function showAccount(user){
+  loginView.style.display='none';
+  accountView.style.display='block';
+  accountEmail.textContent='Account: '+(user?.email||'');
+}
+
+function showLogin(){
+  accountView.style.display='none';
+  loginView.style.display='block';
+  passwordInput.value='';
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  showLogin();
+}
+
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session?.user) showAccount(session.user);
+})();

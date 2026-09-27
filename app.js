@@ -53,7 +53,7 @@ if (clientForm) {
     setBusy(clientForm, true);
     const fd = new FormData(clientForm);
     try {
-      await insertSupabase('richieste', {
+      const nuovaRichiesta = await insertSupabase('richieste', {
   nome_cliente: value(fd, 'Nome'),
   email: value(fd, 'email') || '',
   telefono: value(fd, 'Telefono') || null,

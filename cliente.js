@@ -17,6 +17,7 @@ passwordInput.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function cleanPhone(v){return String(v||'').replace(/[^0-9+]/g,'');}
 function waPhone(v){let n=String(v||'').replace(/\D/g,'');if(n.length===10&&n.startsWith('3'))n='39'+n;return n;}
+function formatDate(v){if(!v)return'';try{return new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(v));}catch{return'';}}
 
 async function login(){
   message.textContent='';
@@ -28,11 +29,28 @@ async function login(){
   await showAccount(data.user);
 }
 
+function ensureAccountActions(){
+  if(document.getElementById('clientActions'))return;
+  const logoutBtn=document.getElementById('logoutBtn');
+  const row=document.createElement('div');
+  row.id='clientActions';
+  row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 6px';
+  row.innerHTML=`
+    <a href="./#richiesta" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#171717;color:#fff;text-decoration:none;font-weight:800">+ Nuova richiesta</a>
+    <button id="refreshRequests" type="button" style="margin:0;padding:12px 16px;border-radius:10px;background:#fff;color:#171717;border:1px solid #bbb;font-weight:800;cursor:pointer">Aggiorna</button>`;
+  accountView.insertBefore(row,logoutBtn);
+  document.getElementById('refreshRequests').addEventListener('click',async()=>{
+    const {data:{user}}=await sb.auth.getUser();
+    if(user)await loadRequests(user.id);
+  });
+}
+
 async function showAccount(user){
   loginView.style.display='none';
   accountView.style.display='block';
   accountEmail.textContent='Account: '+(user?.email||'');
-  if(introText) introText.textContent='Qui trovi soltanto le richieste collegate al tuo account e, quando un professionista accetta, i suoi contatti.';
+  if(introText) introText.textContent='Segui qui lo stato delle tue richieste e contatta il professionista quando accetta il lavoro.';
+  ensureAccountActions();
   await loadRequests(user.id);
 }
 
@@ -44,7 +62,6 @@ async function acceptedProfessionals(richiestaId){
     .eq('stato','accettato');
 
   if(matchError||!matches?.length) return [];
-
   const ids=[...new Set(matches.map(m=>m.professionista_id).filter(Boolean))];
   if(!ids.length) return [];
 
@@ -54,11 +71,21 @@ async function acceptedProfessionals(richiestaId){
     .in('id',ids);
 
   if(proError||!pros?.length) return [];
+  return pros.map(p=>({...p,punteggio:matches.find(m=>m.professionista_id===p.id)?.punteggio??null}));
+}
 
-  return pros.map(p=>({
-    ...p,
-    punteggio:matches.find(m=>m.professionista_id===p.id)?.punteggio??null
-  }));
+function statusInfo(r,pros){
+  const raw=String(r.stato||'').toLowerCase().trim();
+  if(['completata','completato','chiusa','chiuso'].includes(raw)){
+    return {label:'Completata',desc:'La richiesta risulta completata.',bg:'#eef1f4',fg:'#39434d'};
+  }
+  if(pros.length){
+    return {label:'Professionista trovato',desc:'Un professionista ha accettato la richiesta. Puoi contattarlo qui sotto.',bg:'#edf8f0',fg:'#176735'};
+  }
+  if(['annullata','annullato','cancellata','cancellato'].includes(raw)){
+    return {label:'Annullata',desc:'Questa richiesta è stata annullata.',bg:'#f6eeee',fg:'#8b2b2b'};
+  }
+  return {label:'In attesa',desc:'Sgrovio sta cercando un professionista compatibile. Quando qualcuno accetterà, compariranno qui i suoi contatti.',bg:'#fff7e6',fg:'#8a5b00'};
 }
 
 function renderProfessional(p){
@@ -87,7 +114,7 @@ async function loadRequests(userId){
     panel=document.createElement('div');
     panel.id='clientRequests';
     panel.style.marginTop='22px';
-    accountView.insertBefore(panel,document.getElementById('logoutBtn'));
+    accountView.insertBefore(panel,document.getElementById('clientActions'));
   }
   panel.innerHTML='<p class="muted">Caricamento richieste…</p>';
 
@@ -103,7 +130,12 @@ async function loadRequests(userId){
   }
 
   if(!data?.length){
-    panel.innerHTML='<div style="margin:16px 0;padding:18px;border:1px solid #e4dfd6;border-radius:14px;background:#fff"><strong>Nessuna richiesta</strong><p class="muted" style="margin-bottom:0">Non ci sono ancora richieste collegate a questo account.</p></div>';
+    panel.innerHTML=`
+      <div style="margin:16px 0;padding:20px;border:1px solid #e4dfd6;border-radius:14px;background:#fff">
+        <strong>Nessuna richiesta attiva</strong>
+        <p class="muted">Non ci sono ancora richieste collegate a questo account.</p>
+        <a href="./#richiesta" style="display:inline-block;padding:11px 15px;border-radius:9px;background:#171717;color:#fff;text-decoration:none;font-weight:800">Crea la prima richiesta</a>
+      </div>`;
     return;
   }
 
@@ -111,17 +143,21 @@ async function loadRequests(userId){
 
   for(const r of data){
     const pros=await acceptedProfessionals(r.id);
+    const status=statusInfo(r,pros);
     const card=document.createElement('div');
     card.style.cssText='margin:0 0 14px;padding:18px;border:1px solid #e4dfd6;border-radius:14px;background:#fff';
-    const stato=pros.length?'professionista trovato':(r.stato||'nuova');
     card.innerHTML=`
-      <div style="display:inline-block;padding:5px 9px;border-radius:999px;background:#edf8f0;color:#176735;font-weight:800;font-size:13px">${esc(stato)}</div>
-      <h3 style="margin:12px 0 8px">${esc(r.categoria||'Richiesta')}</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="display:inline-block;padding:6px 10px;border-radius:999px;background:${status.bg};color:${status.fg};font-weight:900;font-size:13px">${esc(status.label)}</div>
+        ${r.created_at?`<div class="muted" style="font-size:13px">${esc(formatDate(r.created_at))}</div>`:''}
+      </div>
+      <h3 style="margin:13px 0 8px">${esc(r.categoria||'Richiesta')}</h3>
+      <p class="muted" style="margin-top:0">${esc(status.desc)}</p>
       <p><strong>Zona:</strong> ${esc(r.comune||'')} ${r.cap?'('+esc(r.cap)+')':''}</p>
       <p><strong>Descrizione:</strong><br>${esc(r.descrizione||'')}</p>
       <p><strong>Urgenza:</strong> ${esc(r.urgenza||'Non indicata')}</p>
       <p><strong>Budget:</strong> ${esc(r.budget||'Non indicato')}</p>
-      ${pros.length?pros.map(renderProfessional).join(''):'<p class="muted" style="margin-bottom:0">Sgrovio sta cercando un professionista compatibile. Quando qualcuno accetterà, comparirà qui.</p>'}`;
+      ${pros.length?pros.map(renderProfessional).join(''):''}`;
     panel.appendChild(card);
   }
 }

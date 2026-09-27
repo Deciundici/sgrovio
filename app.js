@@ -53,16 +53,17 @@ if (clientForm) {
     const fd = new FormData(clientForm);
     try {
       await insertSupabase('richieste', {
-        servizio: value(fd, 'Servizio'),
-        zona: value(fd, 'Zona'),
-        descrizione: value(fd, 'Descrizione'),
-        tempistica: value(fd, 'Tempistica'),
-        budget: value(fd, 'Budget'),
-        nome: value(fd, 'Nome'),
-        telefono: value(fd, 'Telefono'),
-        email: value(fd, 'email') || null,
-        consenso_contatto: fd.has('Consenso_contatto')
-      });
+  nome_cliente: value(fd, 'Nome'),
+  email: value(fd, 'email') || '',
+  telefono: value(fd, 'Telefono') || null,
+  categoria: value(fd, 'Servizio'),
+  descrizione: value(fd, 'Descrizione'),
+  comune: value(fd, 'Zona'),
+  provincia: 'MN',
+  budget: value(fd, 'Budget') || null,
+  urgenza: value(fd, 'Tempistica'),
+  stato: 'nuova'
+});
       clientForm.reset();
       showResult('okC', 'Richiesta ricevuta. Abbiamo salvato i dati necessari per avviare la ricerca.');
     } catch (error) {

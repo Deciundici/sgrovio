@@ -265,32 +265,18 @@ async function loadRequests(professionistaId) {
 
   const { data, error } =
     await db
-      .from('matching')
-      .select(`
-        id,
-        punteggio,
-        stato,
-        responded_at,
-        richiesta_id,
-        richieste (
-          nome_cliente,
-          categoria,
-          descrizione,
-          comune,
-          cap,
-          provincia,
-          urgenza,
-          budget
-        )
-      `)
-      .eq('professionista_id', professionistaId)
+      .from('richieste_professionista')
+      .select('*')
       .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('ERRORE RICHIESTE:', error);
+
     requests.innerHTML =
       '<div class="card error">Errore: ' +
-      error.message +
+      escapeHtml(error.message) +
       '</div>';
+
     return;
   }
 
@@ -304,62 +290,84 @@ async function loadRequests(professionistaId) {
 
   data.forEach(match => {
 
-    const r = match.richieste || {};
-
     const card = document.createElement('div');
     card.className = 'card';
+
+    const contatti =
+      match.stato === 'accettato'
+        ? `
+          <div style="margin-top:18px;padding:15px;background:#f1f7f3;border-radius:10px;">
+            <strong>Contatti cliente</strong>
+
+            <p>
+              <strong>Nome:</strong>
+              ${escapeHtml(match.nome_cliente || 'Non indicato')}
+            </p>
+
+            <p>
+              <strong>Email:</strong>
+              ${escapeHtml(match.email || 'Non indicata')}
+            </p>
+
+            <p>
+              <strong>Telefono:</strong>
+              ${escapeHtml(match.telefono || 'Non indicato')}
+            </p>
+          </div>
+        `
+        : '';
 
     card.innerHTML = `
       <span class="score">
         Compatibilità ${match.punteggio}%
       </span>
 
-      <h2>${escapeHtml(r.categoria || 'Richiesta')}</h2>
+      <h2>${escapeHtml(match.categoria || 'Richiesta')}</h2>
 
       <p>
         <strong>Zona:</strong>
-        ${escapeHtml(r.comune || '-')}
-        ${r.cap ? '(' + escapeHtml(r.cap) + ')' : ''}
+        ${escapeHtml(match.comune || '')}
+        ${match.cap ? '(' + escapeHtml(match.cap) + ')' : ''}
       </p>
 
       <p>
         <strong>Descrizione:</strong><br>
-        ${escapeHtml(r.descrizione || '-')}
+        ${escapeHtml(match.descrizione || '')}
       </p>
 
       <p>
         <strong>Urgenza:</strong>
-        ${escapeHtml(r.urgenza || '-')}
+        ${escapeHtml(match.urgenza || 'Non indicata')}
       </p>
 
       <p>
         <strong>Budget:</strong>
-        ${escapeHtml(r.budget || 'Non indicato')}
+        ${escapeHtml(match.budget || 'Non indicato')}
       </p>
 
       <p>
         <strong>Stato:</strong>
-        <span class="status">
-          ${escapeHtml(match.stato)}
-        </span>
+        ${escapeHtml(match.stato)}
       </p>
+
+      ${contatti}
 
       ${
         match.stato === 'proposto'
-        ? `
-          <button
-            class="accept"
-            onclick="respond('${match.id}','accettato')">
-            ACCETTA
-          </button>
+          ? `
+            <button
+              class="accept"
+              onclick="respond('${match.matching_id}','accettato')">
+              ACCETTA
+            </button>
 
-          <button
-            class="reject"
-            onclick="respond('${match.id}','rifiutato')">
-            RIFIUTA
-          </button>
-        `
-        : ''
+            <button
+              class="reject"
+              onclick="respond('${match.matching_id}','rifiutato')">
+              RIFIUTA
+            </button>
+          `
+          : ''
       }
     `;
 

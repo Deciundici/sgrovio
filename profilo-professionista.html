@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Profilo Professionista | Sgrovio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f7f5f0;color:#17231c}a{color:inherit}.top{background:#fff;border-bottom:1px solid #e3ded5;padding:18px 22px}.topin{max-width:920px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:14px}.logo{font-size:26px;font-weight:900;text-decoration:none}.back{text-decoration:none;font-weight:800;color:#173f2c}.wrap{max-width:920px;margin:34px auto;padding:0 18px 40px}.hero,.card{background:#fff;border-radius:18px;box-shadow:0 5px 22px rgba(0,0,0,.06);padding:24px;margin-bottom:18px}.eyebrow{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#68736c}.name{font-size:32px;line-height:1.1;margin:8px 0}.meta{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}.pill{display:inline-block;padding:7px 11px;border-radius:999px;background:#edf8f0;color:#176735;font-size:13px;font-weight:800}.verified{background:#e8eefb;color:#264b8f}.rating{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}.stars{font-size:26px;letter-spacing:1px;color:#9a6b00}.big{font-size:22px;font-weight:900}.muted{color:#68736c}.cta{display:inline-block;margin-top:18px;padding:13px 18px;border-radius:10px;background:#173f2c;color:#fff;text-decoration:none;font-weight:900}.review{padding:16px 0;border-top:1px solid #ece8e1}.review:first-of-type{border-top:0}.review .stars{font-size:20px}.review p{margin:8px 0;line-height:1.5}.empty{padding:16px;border-radius:12px;background:#f7f5f0;color:#68736c}.error{background:#fff0f0;color:#8b1e1e;border:1px solid #efc6c6;padding:16px;border-radius:12px}.skeleton{color:#68736c;text-align:center;padding:40px 10px}@media(max-width:600px){.name{font-size:27px}.hero,.card{padding:20px}.topin{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin"><a class="logo" href="./">Sgrovio</a><a class="back" href="./">← Torna alla home</a></div></header>
+<main class="wrap">
+  <div id="content" class="skeleton">Caricamento profilo professionista…</div>
+</main>
+<script>
+const SUPABASE_URL='https://nijsfyysxvqogjjfawrc.supabase.co';
+const SUPABASE_KEY='sb_publishable_YBMEKwWJCtTZsiRBS45hGQ_sDogz1SE';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const content=document.getElementById('content');
+const id=new URLSearchParams(location.search).get('id');
+
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function stars(v){const n=Math.max(0,Math.min(5,Math.round(Number(v)||0)));return '★'.repeat(n)+'☆'.repeat(5-n);}
+function fmtDate(v){try{return new Intl.DateTimeFormat('it-IT',{dateStyle:'medium'}).format(new Date(v));}catch{return'';}}
+
+async function load(){
+  if(!id){content.className='error';content.textContent='Profilo non specificato.';return;}
+
+  const {data:profiles,error:profileError}=await db.rpc('profilo_professionista_pubblico',{p_professionista_id:id});
+  if(profileError){content.className='error';content.textContent='Profilo non disponibile: '+profileError.message;return;}
+  const p=Array.isArray(profiles)?profiles[0]:profiles;
+  if(!p){content.className='error';content.textContent='Professionista non trovato.';return;}
+
+  const {data:reviews,error:reviewError}=await db.rpc('recensioni_professionista_pubbliche',{p_professionista_id:id});
+  const recensioni=reviewError?[]:(reviews||[]);
+  const nome=p.attivita||p.nome||'Professionista Sgrovio';
+  const media=Number(p.media_voto||0);
+  const totale=Number(p.numero_recensioni||0);
+  const reviewHtml=recensioni.length?recensioni.map(r=>`<div class="review"><div class="stars">${stars(r.voto)}</div>${r.commento?`<p>${esc(r.commento)}</p>`:'<p class="muted">Valutazione senza commento.</p>'}<div class="muted" style="font-size:13px">Cliente Sgrovio · ${esc(fmtDate(r.created_at))}</div></div>`).join(''):'<div class="empty">Questo professionista non ha ancora recensioni pubbliche.</div>';
+
+  content.className='';
+  content.innerHTML=`
+    <section class="hero">
+      <div class="eyebrow">Professionista Sgrovio</div>
+      <h1 class="name">${esc(nome)}</h1>
+      <div class="meta">
+        <span class="pill">${esc(p.categoria||'Servizio')}</span>
+        ${p.comune?`<span class="pill">${esc(p.comune)}${p.provincia?` · ${esc(p.provincia)}`:''}</span>`:''}
+        ${p.verificato?'<span class="pill verified">✓ Profilo verificato</span>':''}
+      </div>
+      <div class="rating">
+        <span class="stars">${totale?stars(media):'☆☆☆☆☆'}</span>
+        <span class="big">${totale?media.toFixed(1)+'/5':'Nuovo profilo'}</span>
+        <span class="muted">${totale} ${totale===1?'recensione':'recensioni'}</span>
+      </div>
+      <a class="cta" href="./#richiesta">Richiedi questo servizio</a>
+    </section>
+    <section class="card">
+      <h2 style="margin-top:0">Recensioni</h2>
+      <p class="muted">Recensioni lasciate da clienti Sgrovio dopo lavori completati.</p>
+      ${reviewHtml}
+    </section>`;
+}
+
+load();
+</script>
+</body>
+</html>

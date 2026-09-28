@@ -65,6 +65,19 @@ function aggiungiAccessoProfessionista() {
 }
 aggiungiAccessoProfessionista();
 
+function aggiungiAvvisoTestLocale() {
+  const hero = document.querySelector('.hero');
+  if (!hero || hero.querySelector('.sgrovio-test-banner')) return;
+  const banner = document.createElement('div');
+  banner.className = 'sgrovio-test-banner';
+  banner.style.cssText = 'max-width:760px;margin:16px auto 0;padding:13px 16px;border:1px solid #e1c97a;border-radius:14px;background:#fff8df;color:#5c4800;font-size:14px;line-height:1.45;text-align:center';
+  banner.innerHTML = '<b>🧪 Progetto pilota a Viadana e dintorni</b><br><span>Sgrovio è in fase di test locale. Il servizio è gratuito: stiamo raccogliendo richieste reali e professionisti della zona per capire come migliorarlo.</span>';
+  const eyebrow = hero.querySelector('.eyebrow');
+  if (eyebrow) eyebrow.insertAdjacentElement('afterend', banner);
+  else hero.prepend(banner);
+}
+aggiungiAvvisoTestLocale();
+
 async function insertSupabase(table, payload) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method:'POST',

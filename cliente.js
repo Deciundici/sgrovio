@@ -36,6 +36,42 @@ function statoInfo(r,pros){
 }
 function fmtDate(v){try{return new Intl.DateTimeFormat('it-IT',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v));}catch{return'';}}
 
+function renderTimeline(r,pros){
+  const hasPro=pros.length>0;
+  const waitingConfirmation=r.stato==='in_attesa_conferma_cliente';
+  const completed=r.stato==='completata';
+  const cancelled=r.stato==='annullata';
+  const problem=r.stato==='problema_segnalato';
+
+  let progress=1;
+  if(hasPro)progress=3;
+  if(waitingConfirmation||problem)progress=4;
+  if(completed)progress=5;
+
+  const steps=[
+    {label:'Richiesta inviata',icon:'✓'},
+    {label:'Ricerca professionista',icon:'⌕'},
+    {label:'Professionista trovato',icon:'✓'},
+    {label:'Lavoro da confermare',icon:'✓'},
+    {label:'Completata',icon:'✓'}
+  ];
+
+  if(cancelled){
+    return `<div style="margin:16px 0;padding:14px 16px;border-radius:12px;background:#fff0f0;border:1px solid #efcaca"><strong style="color:#8b1e1e">Richiesta annullata</strong><p class="muted" style="margin:5px 0 0">Il percorso di questa richiesta è stato interrotto.</p></div>`;
+  }
+
+  return `<div style="margin:16px 0 18px"><div style="font-weight:800;margin-bottom:10px">Avanzamento richiesta</div><div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;align-items:start">${steps.map((step,i)=>{
+    const index=i+1;
+    const done=index<=progress;
+    const current=index===progress&&!completed;
+    const bg=done?'#173f2c':'#ece9e2';
+    const color=done?'#fff':'#756f65';
+    const border=current?'box-shadow:0 0 0 3px rgba(23,63,44,.16);':'';
+    const lineDone=index<progress;
+    return `<div style="text-align:center;min-width:0"><div style="display:flex;align-items:center"><div style="height:3px;flex:1;background:${i===0?'transparent':(lineDone||done?'#173f2c':'#e1ddd5')}"></div><div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${bg};color:${color};font-weight:900;flex:0 0 30px;${border}">${done?step.icon:index}</div><div style="height:3px;flex:1;background:${i===steps.length-1?'transparent':(index<progress?'#173f2c':'#e1ddd5')}"></div></div><div style="margin-top:7px;font-size:11px;line-height:1.2;font-weight:${done?'800':'600'};color:${done?'#173f2c':'#756f65'}">${step.label}</div></div>`;
+  }).join('')}</div>${problem?'<div style="margin-top:12px;padding:10px 12px;border-radius:9px;background:#fff0f0;color:#8b1e1e;font-weight:700">Hai segnalato un problema: la richiesta resta aperta finché non viene risolta.</div>':''}</div>`;
+}
+
 async function login(){message.textContent='';const email=emailInput.value.trim();const password=passwordInput.value;if(!email||!password){message.textContent='Inserisci email e password.';return;}const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){message.textContent='Accesso non riuscito: '+error.message;return;}await showAccount(data.user);}
 
 async function showAccount(user){loginView.style.display='none';accountView.style.display='block';accountEmail.textContent='Account: '+(user?.email||'');if(introText)introText.textContent='Qui trovi le tue richieste e i professionisti che le hanno accettate.';ensureActions();await loadRequests(user.id);}
@@ -107,13 +143,14 @@ async function loadRequests(userId){
     const pros=await acceptedProfessionals(r.id);
     const reviews=r.stato==='completata'?await reviewsForRequest(r.id):[];
     const label=statoLabel(r,pros),info=statoInfo(r,pros);
+    const timelineHtml=renderTimeline(r,pros);
     const card=document.createElement('div');
     card.style.cssText='margin:0 0 14px;padding:18px;border:1px solid #e4dfd6;border-radius:14px;background:#fff';
     const awaitingConfirmation=r.stato==='in_attesa_conferma_cliente'&&pros.length;
     const badgeBg=r.stato==='completata'?'#e8eefb':r.stato==='problema_segnalato'?'#fff0f0':r.stato==='in_attesa_conferma_cliente'?'#fff7df':'#edf8f0';
     const badgeColor=r.stato==='completata'?'#264b8f':r.stato==='problema_segnalato'?'#8b1e1e':r.stato==='in_attesa_conferma_cliente'?'#7a5a00':'#176735';
     const reviewHtml=r.stato==='completata'?pros.map(p=>renderReview(r,p,reviews.find(x=>x.professionista_id===p.id))).join(''):'';
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div style="display:inline-block;padding:6px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-weight:800;font-size:13px">${esc(label)}</div><span class="muted" style="font-size:13px">${esc(fmtDate(r.created_at))}</span></div><h3 style="margin:12px 0 6px">${esc(r.categoria||'Richiesta')}</h3><p class="muted" style="margin-top:0">${esc(info)}</p><p><strong>Zona:</strong> ${esc(r.comune||'')} ${r.cap?'('+esc(r.cap)+')':''}</p><p><strong>Descrizione:</strong><br>${esc(r.descrizione||'')}</p><p><strong>Urgenza:</strong> ${esc(r.urgenza||'Non indicata')}</p><p><strong>Budget:</strong> ${esc(r.budget||'Non indicato')}</p>${pros.length?pros.map(renderProfessional).join(''):''}${awaitingConfirmation?`<div style="margin-top:16px;padding:16px;border-radius:12px;background:#fff7df;border:1px solid #ead596"><strong>Il professionista ha indicato il lavoro come eseguito.</strong><p style="margin:8px 0 12px">Conferma il completamento solo se sei soddisfatto del lavoro svolto.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="confermaCompletamento('${esc(r.id)}')" style="background:#173f2c;color:#fff">Conferma completamento</button><button onclick="segnalaProblema('${esc(r.id)}')" style="background:#fff;color:#8b1e1e;border:1px solid #8b1e1e">Segnala un problema</button></div></div>`:''}${reviewHtml}`;
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div style="display:inline-block;padding:6px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-weight:800;font-size:13px">${esc(label)}</div><span class="muted" style="font-size:13px">${esc(fmtDate(r.created_at))}</span></div><h3 style="margin:12px 0 6px">${esc(r.categoria||'Richiesta')}</h3><p class="muted" style="margin-top:0">${esc(info)}</p>${timelineHtml}<p><strong>Zona:</strong> ${esc(r.comune||'')} ${r.cap?'('+esc(r.cap)+')':''}</p><p><strong>Descrizione:</strong><br>${esc(r.descrizione||'')}</p><p><strong>Urgenza:</strong> ${esc(r.urgenza||'Non indicata')}</p><p><strong>Budget:</strong> ${esc(r.budget||'Non indicato')}</p>${pros.length?pros.map(renderProfessional).join(''):''}${awaitingConfirmation?`<div style="margin-top:16px;padding:16px;border-radius:12px;background:#fff7df;border:1px solid #ead596"><strong>Il professionista ha indicato il lavoro come eseguito.</strong><p style="margin:8px 0 12px">Conferma il completamento solo se sei soddisfatto del lavoro svolto.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="confermaCompletamento('${esc(r.id)}')" style="background:#173f2c;color:#fff">Conferma completamento</button><button onclick="segnalaProblema('${esc(r.id)}')" style="background:#fff;color:#8b1e1e;border:1px solid #8b1e1e">Segnala un problema</button></div></div>`:''}${reviewHtml}`;
     panel.appendChild(card);
   }
 }

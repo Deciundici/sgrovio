@@ -17,6 +17,7 @@ passwordInput.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function cleanPhone(v){return String(v||'').replace(/[^0-9+]/g,'');}
 function waPhone(v){let n=String(v||'').replace(/\D/g,'');if(n.length===10&&n.startsWith('3'))n='39'+n;return n;}
+function stars(v){const n=Math.max(0,Math.min(5,Number(v)||0));return '★'.repeat(n)+'☆'.repeat(5-n);}
 function statoLabel(r,pros){
   if(r.stato==='completata')return'Completata';
   if(r.stato==='annullata')return'Annullata';
@@ -43,7 +44,21 @@ function ensureActions(){let bar=document.getElementById('clientActions');if(bar
 
 async function acceptedProfessionals(richiestaId){const {data:matches,error:matchError}=await sb.from('matching').select('professionista_id,punteggio,stato').eq('richiesta_id',richiestaId).eq('stato','accettato');if(matchError||!matches?.length)return[];const ids=[...new Set(matches.map(m=>m.professionista_id).filter(Boolean))];if(!ids.length)return[];const {data:pros,error:proError}=await sb.from('professionisti').select('id,nome,attivita,telefono,email,categoria').in('id',ids);if(proError||!pros?.length)return[];return pros.map(p=>({...p,punteggio:matches.find(m=>m.professionista_id===p.id)?.punteggio??null}));}
 
+async function reviewsForRequest(richiestaId){
+  const {data,error}=await sb.from('recensioni').select('professionista_id,voto,commento,created_at').eq('richiesta_id',richiestaId);
+  if(error)return[];
+  return data||[];
+}
+
 function renderProfessional(p){const tel=cleanPhone(p.telefono),wa=waPhone(p.telefono),nome=p.attivita||p.nome||'Professionista Sgrovio';return `<div style="margin-top:16px;padding:16px;border:1px solid #b9dec5;border-radius:12px;background:#edf8f0"><div style="font-weight:900;color:#176735">✓ Professionista disponibile</div><h4 style="margin:10px 0 6px;font-size:18px">${esc(nome)}</h4><p style="margin:6px 0"><strong>Servizio:</strong> ${esc(p.categoria||'Non indicato')}</p>${p.punteggio!=null?`<p style="margin:6px 0"><strong>Compatibilità:</strong> ${esc(p.punteggio)}%</p>`:''}<p style="margin:6px 0"><strong>Telefono:</strong> ${esc(p.telefono||'Non indicato')}</p><p style="margin:6px 0"><strong>Email:</strong> ${esc(p.email||'Non indicata')}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${tel?`<a href="tel:${esc(tel)}" style="padding:10px 14px;border-radius:9px;background:#173f2c;color:#fff;text-decoration:none;font-weight:800">Chiama</a>`:''}${wa?`<a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener" style="padding:10px 14px;border-radius:9px;background:#173f2c;color:#fff;text-decoration:none;font-weight:800">WhatsApp</a>`:''}${p.email?`<a href="mailto:${esc(p.email)}" style="padding:10px 14px;border-radius:9px;border:1px solid #173f2c;color:#173f2c;text-decoration:none;font-weight:800">Email</a>`:''}</div></div>`;}
+
+function renderReview(r,p,existing){
+  const key=`${r.id}-${p.id}`;
+  if(existing){
+    return `<div style="margin-top:14px;padding:16px;border-radius:12px;background:#fff8e7;border:1px solid #ead8a1"><strong>La tua recensione</strong><div style="font-size:22px;color:#9a6b00;margin:6px 0">${stars(existing.voto)}</div>${existing.commento?`<p style="margin:6px 0">${esc(existing.commento)}</p>`:''}<span class="muted" style="font-size:12px">Inviata il ${esc(fmtDate(existing.created_at))}</span></div>`;
+  }
+  return `<div style="margin-top:14px;padding:16px;border-radius:12px;background:#fff8e7;border:1px solid #ead8a1"><strong>Come è andato il lavoro?</strong><p class="muted" style="margin:6px 0 12px">Lascia una valutazione al professionista. La recensione può essere inviata una sola volta.</p><label style="display:block;font-weight:700;margin-bottom:6px">Valutazione</label><select id="review-vote-${key}" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:9px;font-size:16px"><option value="5">★★★★★ - Eccellente</option><option value="4">★★★★☆ - Molto buono</option><option value="3">★★★☆☆ - Buono</option><option value="2">★★☆☆☆ - Da migliorare</option><option value="1">★☆☆☆☆ - Insoddisfacente</option></select><label style="display:block;font-weight:700;margin:12px 0 6px">Commento (facoltativo)</label><textarea id="review-comment-${key}" maxlength="500" placeholder="Racconta brevemente la tua esperienza" style="width:100%;min-height:90px;padding:12px;border:1px solid #ccc;border-radius:9px;font:inherit;resize:vertical"></textarea><button onclick="submitReview('${esc(r.id)}','${esc(p.id)}')" style="margin-top:10px;background:#173f2c;color:#fff">Invia recensione</button></div>`;
+}
 
 async function confermaCompletamento(id){
   if(!confirm('Confermi che il lavoro è stato eseguito e può essere chiuso come completato?'))return;
@@ -60,8 +75,21 @@ async function segnalaProblema(id){
   const{data:{user}}=await sb.auth.getUser();
   if(user)await loadRequests(user.id);
 }
+
+async function submitReview(richiestaId,professionistaId){
+  const key=`${richiestaId}-${professionistaId}`;
+  const voto=Number(document.getElementById(`review-vote-${key}`)?.value||0);
+  const commento=(document.getElementById(`review-comment-${key}`)?.value||'').trim();
+  if(voto<1||voto>5){alert('Seleziona una valutazione da 1 a 5 stelle.');return;}
+  if(!confirm(`Inviare la recensione da ${voto} stelle? Dopo l'invio non potrà essere modificata.`))return;
+  const {error}=await sb.rpc('crea_recensione_cliente',{p_richiesta_id:richiestaId,p_professionista_id:professionistaId,p_voto:voto,p_commento:commento||null});
+  if(error){alert('Errore recensione: '+error.message);return;}
+  const{data:{user}}=await sb.auth.getUser();
+  if(user)await loadRequests(user.id);
+}
 window.confermaCompletamento=confermaCompletamento;
 window.segnalaProblema=segnalaProblema;
+window.submitReview=submitReview;
 
 async function loadRequests(userId){
   let panel=document.getElementById('clientRequests');
@@ -73,13 +101,15 @@ async function loadRequests(userId){
   panel.innerHTML='<h2 style="margin:0 0 14px">Le tue richieste</h2>';
   for(const r of data){
     const pros=await acceptedProfessionals(r.id);
+    const reviews=r.stato==='completata'?await reviewsForRequest(r.id):[];
     const label=statoLabel(r,pros),info=statoInfo(r,pros);
     const card=document.createElement('div');
     card.style.cssText='margin:0 0 14px;padding:18px;border:1px solid #e4dfd6;border-radius:14px;background:#fff';
     const awaitingConfirmation=r.stato==='in_attesa_conferma_cliente'&&pros.length;
     const badgeBg=r.stato==='completata'?'#e8eefb':r.stato==='problema_segnalato'?'#fff0f0':r.stato==='in_attesa_conferma_cliente'?'#fff7df':'#edf8f0';
     const badgeColor=r.stato==='completata'?'#264b8f':r.stato==='problema_segnalato'?'#8b1e1e':r.stato==='in_attesa_conferma_cliente'?'#7a5a00':'#176735';
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div style="display:inline-block;padding:6px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-weight:800;font-size:13px">${esc(label)}</div><span class="muted" style="font-size:13px">${esc(fmtDate(r.created_at))}</span></div><h3 style="margin:12px 0 6px">${esc(r.categoria||'Richiesta')}</h3><p class="muted" style="margin-top:0">${esc(info)}</p><p><strong>Zona:</strong> ${esc(r.comune||'')} ${r.cap?'('+esc(r.cap)+')':''}</p><p><strong>Descrizione:</strong><br>${esc(r.descrizione||'')}</p><p><strong>Urgenza:</strong> ${esc(r.urgenza||'Non indicata')}</p><p><strong>Budget:</strong> ${esc(r.budget||'Non indicato')}</p>${pros.length?pros.map(renderProfessional).join(''):''}${awaitingConfirmation?`<div style="margin-top:16px;padding:16px;border-radius:12px;background:#fff7df;border:1px solid #ead596"><strong>Il professionista ha indicato il lavoro come eseguito.</strong><p style="margin:8px 0 12px">Conferma il completamento solo se sei soddisfatto del lavoro svolto.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="confermaCompletamento('${esc(r.id)}')" style="background:#173f2c;color:#fff">Conferma completamento</button><button onclick="segnalaProblema('${esc(r.id)}')" style="background:#fff;color:#8b1e1e;border:1px solid #8b1e1e">Segnala un problema</button></div></div>`:''}`;
+    const reviewHtml=r.stato==='completata'?pros.map(p=>renderReview(r,p,reviews.find(x=>x.professionista_id===p.id))).join(''):'';
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div style="display:inline-block;padding:6px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-weight:800;font-size:13px">${esc(label)}</div><span class="muted" style="font-size:13px">${esc(fmtDate(r.created_at))}</span></div><h3 style="margin:12px 0 6px">${esc(r.categoria||'Richiesta')}</h3><p class="muted" style="margin-top:0">${esc(info)}</p><p><strong>Zona:</strong> ${esc(r.comune||'')} ${r.cap?'('+esc(r.cap)+')':''}</p><p><strong>Descrizione:</strong><br>${esc(r.descrizione||'')}</p><p><strong>Urgenza:</strong> ${esc(r.urgenza||'Non indicata')}</p><p><strong>Budget:</strong> ${esc(r.budget||'Non indicato')}</p>${pros.length?pros.map(renderProfessional).join(''):''}${awaitingConfirmation?`<div style="margin-top:16px;padding:16px;border-radius:12px;background:#fff7df;border:1px solid #ead596"><strong>Il professionista ha indicato il lavoro come eseguito.</strong><p style="margin:8px 0 12px">Conferma il completamento solo se sei soddisfatto del lavoro svolto.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="confermaCompletamento('${esc(r.id)}')" style="background:#173f2c;color:#fff">Conferma completamento</button><button onclick="segnalaProblema('${esc(r.id)}')" style="background:#fff;color:#8b1e1e;border:1px solid #8b1e1e">Segnala un problema</button></div></div>`:''}${reviewHtml}`;
     panel.appendChild(card);
   }
 }

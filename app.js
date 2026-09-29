@@ -16,6 +16,19 @@ function aggiornaMenuServizi() {
 }
 aggiornaMenuServizi();
 
+function abilitaServiziCliccabili(){
+  document.querySelectorAll('.service[data-service]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      const servizio=button.dataset.service;
+      const select=document.querySelector('#richiesta select[name="Servizio"]');
+      if(select && SERVIZI_SGROVIO.includes(servizio)) select.value=servizio;
+      document.getElementById('richiesta')?.scrollIntoView({behavior:'smooth',block:'start'});
+      setTimeout(()=>select?.focus(),450);
+    });
+  });
+}
+abilitaServiziCliccabili();
+
 function aggiungiAccessoProfessionista() {
   const nav = document.querySelector('.nav');
   const navPro = nav?.querySelector('.navlink');
@@ -78,15 +91,6 @@ function aggiungiAvvisoTestLocale() {
 }
 aggiungiAvvisoTestLocale();
 
-async function insertSupabase(table, payload) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method:'POST',
-    headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json',Prefer:'return=minimal'},
-    body:JSON.stringify(payload)
-  });
-  if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`);
-}
-
 async function insertSupabaseAutenticato(table, payload, accessToken) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method:'POST',
@@ -96,19 +100,19 @@ async function insertSupabaseAutenticato(table, payload, accessToken) {
   if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`);
 }
 
-async function creaAccountProfessionista(email,password) {
+async function signup(email,password,label='account') {
   const response=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{
     method:'POST',
     headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},
     body:JSON.stringify({email,password})
   });
   const data=await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(data.msg||data.message||data.error_description||'Creazione account non riuscita');
-  if(!data.user||!data.user.id) throw new Error('Account creato ma ID utente non disponibile');
-  return data.user;
+  if(!response.ok) throw new Error(data.msg||data.message||data.error_description||`Creazione ${label} non riuscita`);
+  if(!data.user?.id) throw new Error(`${label} creato ma ID utente non disponibile`);
+  return data;
 }
 
-async function loginCliente(email,password) {
+async function loginAccount(email,password) {
   const response=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
     method:'POST',
     headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},
@@ -116,26 +120,29 @@ async function loginCliente(email,password) {
   });
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(data.msg||data.message||data.error_description||'Credenziali non valide');
-  if(!data.user?.id||!data.access_token) throw new Error('Sessione cliente non disponibile');
+  if(!data.user?.id||!data.access_token) throw new Error('Sessione non disponibile');
   return data;
 }
 
+async function creaAccountProfessionista(email,password) {
+  const data=await signup(email,password,'account professionista');
+  if(data.access_token) return data;
+  try{
+    return await loginAccount(email,password);
+  }catch{
+    throw new Error('Account creato. Conferma prima l’email ricevuta e poi accedi all’Area Professionista.');
+  }
+}
+
 async function creaCliente(email,password) {
-  const response=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{
-    method:'POST',
-    headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({email,password})
-  });
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(data.msg||data.message||data.error_description||'Creazione account cliente non riuscita');
-  if(!data.user?.id) throw new Error('Account cliente non creato');
+  const data=await signup(email,password,'account cliente');
   if(!data.access_token) throw new Error('Account creato, ma la sessione non è ancora attiva. Accedi dall’Area Cliente.');
   return data;
 }
 
 async function creaOAccediCliente(email,password) {
   try {
-    return await loginCliente(email,password);
+    return await loginAccount(email,password);
   } catch (loginError) {
     try {
       return await creaCliente(email,password);
@@ -247,8 +254,7 @@ if(clientForm){
       clientForm.reset();
       showClientSuccess();
     }catch(error){
-      const msg=String(error.message||error);
-      showResult('okC',msg,false);
+      showResult('okC',String(error.message||error),false);
     }finally{
       setBusy(clientForm,false);
     }
@@ -265,18 +271,20 @@ if(proForm){
     if(password.length<8){showResult('okP','La password deve contenere almeno 8 caratteri.',false);return;}
     setBusy(proForm,true);
     try{
-      const nome=value(fd,'Nome_attivita'),email=value(fd,'email').toLowerCase(),user=await creaAccountProfessionista(email,password);
-      await insertSupabase('professionisti',{
+      const nome=value(fd,'Nome_attivita');
+      const email=value(fd,'email').toLowerCase();
+      const session=await creaAccountProfessionista(email,password);
+      await insertSupabaseAutenticato('professionisti',{
         nome,email,telefono:value(fd,'Telefono')||null,attivita:nome,
         categoria:value(fd,'Servizio'),comune:value(fd,'Zone_servite'),provincia:'MN',
         raggio_km:parseRaggio(value(fd,'Raggio_massimo')),disponibile:true,
-        verificato:false,stato:'in_attesa',user_id:user.id
-      });
+        verificato:false,stato:'in_attesa',user_id:session.user.id
+      },session.access_token);
       proForm.reset();
       showResult('okP','Candidatura e account creati. Ora puoi accedere all’Area Professionista con email e password.');
     }catch(error){
       const msg=String(error.message||error);
-      showResult('okP',msg.toLowerCase().includes('already')||msg.toLowerCase().includes('registered')?'Questa email risulta già registrata. Usa un’altra email per il test oppure accedi all’Area Professionista.':msg,false);
+      showResult('okP',msg.toLowerCase().includes('already')||msg.toLowerCase().includes('registered')?'Questa email risulta già registrata. Accedi all’Area Professionista oppure usa un’altra email.':msg,false);
     }finally{setBusy(proForm,false);}
   });
 }

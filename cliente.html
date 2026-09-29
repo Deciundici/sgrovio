@@ -3,31 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#171717">
+<meta name="robots" content="noindex,nofollow">
 <title>Area Cliente | Sgrovio</title>
 <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "212e7d7c3e5a4350bbaaee1e0391d14d"}'></script>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:#f7f5f0;color:#171717}header{background:#fff;border-bottom:1px solid #e4dfd6;padding:20px}.nav{max-width:850px;margin:auto;display:flex;justify-content:space-between;align-items:center}.brand{font-size:25px;font-weight:900;text-decoration:none;color:#171717}.home{color:#171717;text-decoration:none;font-weight:700}.wrap{max-width:620px;margin:55px auto;padding:0 20px}.card{background:#fff;border:1px solid #e4dfd6;border-radius:18px;padding:28px;box-shadow:0 5px 20px rgba(0,0,0,.04)}h1{margin-top:0}.muted{color:#686868;line-height:1.5}label{display:block;font-weight:700;margin-top:14px}input{width:100%;padding:14px;border:1px solid #ccc;border-radius:10px;font:inherit;margin-top:7px}button{padding:13px 18px;border:0;border-radius:10px;background:#171717;color:#fff;font-weight:800;cursor:pointer;margin-top:16px}.secondary{background:#fff;color:#171717;border:1px solid #bbb;margin-left:8px}.message{margin-top:14px;color:#9b1c1c}.ok{color:#176735}.account{background:#edf8f0;border:1px solid #c8e3d0;border-radius:14px;padding:18px;margin-top:18px}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:#f7f5f0;color:#171717}header{background:#fff;border-bottom:1px solid #e4dfd6;padding:20px}.nav{max-width:850px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-size:25px;font-weight:900;text-decoration:none;color:#171717}.home{color:#171717;text-decoration:none;font-weight:700}.wrap{max-width:720px;margin:45px auto;padding:0 20px}.card{background:#fff;border:1px solid #e4dfd6;border-radius:18px;padding:28px;box-shadow:0 5px 20px rgba(0,0,0,.04)}h1{margin-top:0}.muted{color:#686868;line-height:1.5}label{display:block;font-weight:700;margin-top:14px}input{width:100%;padding:14px;border:1px solid #ccc;border-radius:10px;font:inherit;margin-top:7px}button{padding:13px 18px;border:0;border-radius:10px;background:#171717;color:#fff;font-weight:800;cursor:pointer;margin-top:16px}.secondary{background:#fff;color:#171717;border:1px solid #bbb;margin-left:8px}.message{margin-top:14px;color:#9b1c1c}.ok{color:#176735}.account{background:#edf8f0;border:1px solid #c8e3d0;border-radius:14px;padding:18px;margin-top:18px}.footnote{margin-top:18px;font-size:12px;color:#777}.footnote a{font-weight:700;color:#171717}@media(max-width:600px){header{padding:15px}.nav{align-items:flex-start}.wrap{margin-top:28px;padding:0 14px}.card{padding:21px}.secondary{margin-left:0}}
 </style>
 </head>
 <body>
 <header><div class="nav"><a class="brand" href="./">Sgrovio</a><a class="home" href="./">Home</a></div></header>
 <main class="wrap">
-  <section class="card">
-    <div id="loginView">
-      <h1>Area Cliente</h1>
-      <p class="muted">Accedi con email e password del tuo account Sgrovio per seguire le tue richieste e vedere i professionisti che le hanno accettate.</p>
-      <label>Email<input id="email" type="email" autocomplete="email" placeholder="nome@email.it"></label>
-      <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label>
-      <button id="loginBtn">Accedi</button>
-      <p id="message" class="message"></p>
-    </div>
-    <div id="accountView" style="display:none">
-      <h1>Area Cliente</h1>
-      <div class="account"><strong>Accesso effettuato ✓</strong><p id="accountEmail" class="muted"></p></div>
-      <p class="muted">Qui trovi le tue richieste, il loro stato e i professionisti che le hanno accettate.</p>
-      <button id="logoutBtn" class="secondary">Esci</button>
-    </div>
-  </section>
+<section class="card">
+<div id="loginView"><h1>Area Cliente</h1><p class="muted">Accedi per vedere le tue richieste, seguirne lo stato, contattare i professionisti che le accettano e lasciare una recensione a lavoro concluso.</p><label>Email<input id="email" type="email" autocomplete="email" placeholder="nome@email.it"></label><label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label><button id="loginBtn">Accedi</button><p id="message" class="message"></p></div>
+<div id="accountView" style="display:none"><h1>Area Cliente</h1><div class="account"><strong>Accesso effettuato ✓</strong><p id="accountEmail" class="muted"></p></div><p class="muted">Qui trovi le tue richieste, l'avanzamento e i professionisti che le hanno accettate.</p><button id="logoutBtn" class="secondary">Esci</button></div>
+<p class="footnote">Consulta l'<a href="privacy.html">informativa privacy</a> per sapere come vengono gestiti i dati del servizio.</p>
+</section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="cliente.js"></script>

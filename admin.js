@@ -23,6 +23,16 @@ function badge(v){
 }
 function yesNo(v){return v?'<span class="badge ok">Sì</span>':'<span class="badge">No</span>';}
 function contains(obj,q){return JSON.stringify(obj??{}).toLowerCase().includes(q.toLowerCase());}
+function cleanPhone(v){return String(v||'').replace(/[^0-9+]/g,'');}
+function waPhone(v){let n=String(v||'').replace(/\D/g,'');if(n.length===10&&n.startsWith('3'))n='39'+n;return n;}
+function contactActions(email,phone){
+  const tel=cleanPhone(phone),wa=waPhone(phone);
+  const links=[];
+  if(tel)links.push(`<a class="primarylink" href="tel:${esc(tel)}">Chiama</a>`);
+  if(wa)links.push(`<a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>`);
+  if(email)links.push(`<a href="mailto:${esc(email)}">Email</a>`);
+  return links.length?`<div class="actionlinks">${links.join('')}</div>`:'';
+}
 
 async function login(){
   loginMessage.textContent='';
@@ -108,22 +118,22 @@ function renderTable(){
 
 function renderRichieste(rows){
   if(!rows.length){content.innerHTML='<div class="empty">Nessuna richiesta.</div>';return;}
-  content.innerHTML=`<table><thead><tr><th>Data</th><th>Cliente</th><th>Servizio</th><th>Zona</th><th>Descrizione</th><th>Urgenza</th><th>Budget</th><th>Stato</th><th>Contatti</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(r.created_at))}</td><td><strong>${esc(r.nome_cliente||'—')}</strong></td><td>${esc(r.categoria||'—')}</td><td>${esc(r.comune||'—')} ${r.cap?`(${esc(r.cap)})`:''}</td><td class="desc">${esc(r.descrizione||'')}</td><td>${esc(r.urgenza||'—')}</td><td>${esc(r.budget||'—')}</td><td>${badge(r.stato)}</td><td>${esc(r.email||'—')}<br>${esc(r.telefono||'—')}</td></tr>`).join('')}</tbody></table>`;
+  content.innerHTML=`<table><thead><tr><th>Data</th><th>Cliente</th><th>Servizio</th><th>Zona</th><th>Descrizione</th><th>Urgenza</th><th>Budget</th><th>Stato</th><th>Contatti</th></tr></thead><tbody>${rows.map(r=>`<tr><td data-label="Data">${esc(fmtDate(r.created_at))}</td><td data-label="Cliente"><strong>${esc(r.nome_cliente||'—')}</strong></td><td data-label="Servizio">${esc(r.categoria||'—')}</td><td data-label="Zona">${esc(r.comune||'—')} ${r.cap?`(${esc(r.cap)})`:''}</td><td data-label="Descrizione" class="desc">${esc(r.descrizione||'')}</td><td data-label="Urgenza">${esc(r.urgenza||'—')}</td><td data-label="Budget">${esc(r.budget||'—')}</td><td data-label="Stato">${badge(r.stato)}</td><td data-label="Contatti">${esc(r.email||'—')}<br>${esc(r.telefono||'—')}${contactActions(r.email,r.telefono)}</td></tr>`).join('')}</tbody></table>`;
 }
 
 function renderProfessionisti(rows){
   if(!rows.length){content.innerHTML='<div class="empty">Nessun professionista.</div>';return;}
-  content.innerHTML=`<table><thead><tr><th>Data</th><th>Professionista</th><th>Categoria</th><th>Zona</th><th>Raggio</th><th>Disponibile</th><th>Verificato</th><th>Stato</th><th>Contatti</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(r.created_at))}</td><td><strong>${esc(r.attivita||r.nome||'—')}</strong></td><td>${esc(r.categoria||'—')}</td><td>${esc(r.comune||'—')} ${r.provincia?`· ${esc(r.provincia)}`:''}</td><td>${r.raggio_km!=null?esc(r.raggio_km)+' km':'—'}</td><td>${yesNo(r.disponibile)}</td><td>${yesNo(r.verificato)}</td><td>${badge(r.stato)}</td><td>${esc(r.email||'—')}<br>${esc(r.telefono||'—')}</td></tr>`).join('')}</tbody></table>`;
+  content.innerHTML=`<table><thead><tr><th>Data</th><th>Professionista</th><th>Categoria</th><th>Zona</th><th>Raggio</th><th>Disponibile</th><th>Verificato</th><th>Stato</th><th>Contatti</th></tr></thead><tbody>${rows.map(r=>`<tr><td data-label="Data">${esc(fmtDate(r.created_at))}</td><td data-label="Professionista"><strong>${esc(r.attivita||r.nome||'—')}</strong></td><td data-label="Categoria">${esc(r.categoria||'—')}</td><td data-label="Zona">${esc(r.comune||'—')} ${r.provincia?`· ${esc(r.provincia)}`:''}</td><td data-label="Raggio">${r.raggio_km!=null?esc(r.raggio_km)+' km':'—'}</td><td data-label="Disponibile">${yesNo(r.disponibile)}</td><td data-label="Verificato">${yesNo(r.verificato)}</td><td data-label="Stato">${badge(r.stato)}</td><td data-label="Contatti">${esc(r.email||'—')}<br>${esc(r.telefono||'—')}${contactActions(r.email,r.telefono)}</td></tr>`).join('')}</tbody></table>`;
 }
 
 function renderMatching(rows){
   if(!rows.length){content.innerHTML='<div class="empty">Nessun matching.</div>';return;}
-  content.innerHTML=`<table><thead><tr><th>Data</th><th>Servizio</th><th>Zona</th><th>Professionista</th><th>Compatibilità</th><th>Stato</th><th>Richiesta ID</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(r.created_at))}</td><td>${esc(r.categoria||'—')}</td><td>${esc(r.comune||'—')}</td><td><strong>${esc(r.professionista||'—')}</strong></td><td>${esc(r.punteggio??0)}%</td><td>${badge(r.stato)}</td><td style="font-family:monospace;font-size:11px">${esc(r.richiesta_id||'')}</td></tr>`).join('')}</tbody></table>`;
+  content.innerHTML=`<table><thead><tr><th>Data</th><th>Servizio</th><th>Zona</th><th>Professionista</th><th>Compatibilità</th><th>Stato</th><th>Richiesta ID</th></tr></thead><tbody>${rows.map(r=>`<tr><td data-label="Data">${esc(fmtDate(r.created_at))}</td><td data-label="Servizio">${esc(r.categoria||'—')}</td><td data-label="Zona">${esc(r.comune||'—')}</td><td data-label="Professionista"><strong>${esc(r.professionista||'—')}</strong></td><td data-label="Compatibilità">${esc(r.punteggio??0)}%</td><td data-label="Stato">${badge(r.stato)}</td><td data-label="Richiesta ID" style="font-family:monospace;font-size:11px">${esc(r.richiesta_id||'')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 function renderRecensioni(rows){
   if(!rows.length){content.innerHTML='<div class="empty">Nessuna recensione.</div>';return;}
-  content.innerHTML=`<table><thead><tr><th>Data</th><th>Professionista</th><th>Voto</th><th>Commento</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(r.created_at))}</td><td><strong>${esc(r.professionista||'—')}</strong></td><td>${'★'.repeat(Math.max(0,Math.min(5,Number(r.voto)||0)))} ${esc(r.voto||'—')}/5</td><td class="desc">${esc(r.commento||'—')}</td></tr>`).join('')}</tbody></table>`;
+  content.innerHTML=`<table><thead><tr><th>Data</th><th>Professionista</th><th>Voto</th><th>Commento</th></tr></thead><tbody>${rows.map(r=>`<tr><td data-label="Data">${esc(fmtDate(r.created_at))}</td><td data-label="Professionista"><strong>${esc(r.professionista||'—')}</strong></td><td data-label="Voto">${'★'.repeat(Math.max(0,Math.min(5,Number(r.voto)||0)))} ${esc(r.voto||'—')}/5</td><td data-label="Commento" class="desc">${esc(r.commento||'—')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 loginBtn.onclick=login;

@@ -91,6 +91,44 @@ function aggiungiAvvisoTestLocale() {
 }
 aggiungiAvvisoTestLocale();
 
+function aggiornaContattiSgrovio(){
+  const footer=document.querySelector('footer');
+  if(!footer)return;
+
+  let links=footer.querySelector('.footlinks');
+  if(!links){
+    const wrap=footer.querySelector('.foot')||footer;
+    links=document.createElement('div');
+    links.className='footlinks';
+    wrap.appendChild(links);
+  }
+
+  const voci=[
+    ['mailto:info@sgrovio.it','Contatti'],
+    ['privacy.html','Privacy'],
+    ['cliente.html','Area Cliente'],
+    ['professionista.html','Area Professionista']
+  ];
+
+  voci.forEach(([href,testo])=>{
+    if(!links.querySelector(`a[href="${href}"]`)){
+      const a=document.createElement('a');
+      a.href=href;
+      a.textContent=testo;
+      links.appendChild(a);
+    }
+  });
+
+  if(!footer.querySelector('.sgrovio-contact')){
+    const info=document.createElement('p');
+    info.className='sgrovio-contact';
+    info.style.cssText='margin:12px 0 0;font-size:13px;color:#777';
+    info.innerHTML='Assistenza e informazioni: <a href="mailto:info@sgrovio.it" style="font-weight:750;color:#171717">info@sgrovio.it</a>';
+    (footer.querySelector('.foot')||footer).appendChild(info);
+  }
+}
+aggiornaContattiSgrovio();
+
 async function insertSupabaseAutenticato(table, payload, accessToken) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method:'POST',

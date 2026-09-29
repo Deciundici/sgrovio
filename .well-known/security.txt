@@ -1,0 +1,4 @@
+Contact: mailto:info@sgrovio.it
+Expires: 2027-09-29T23:59:59Z
+Canonical: https://sgrovio.it/.well-known/security.txt
+Preferred-Languages: it, en

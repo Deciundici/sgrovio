@@ -2,7 +2,8 @@ import { withSupabase } from 'npm:@supabase/server@^1'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SGROVIO_NOTIFY_EMAIL = Deno.env.get('SGROVIO_NOTIFY_EMAIL')
-const FROM_EMAIL = 'Sgrovio <info@sgrovio.it>'
+// Finché sgrovio.it non è verificato in Resend, usa il sender già funzionante.
+const FROM_EMAIL = 'Sgrovio <onboarding@resend.dev>'
 const PRO_AREA_URL = 'https://sgrovio.it/professionista.html'
 const ADMIN_URL = 'https://sgrovio.it/admin.html'
 
@@ -57,7 +58,6 @@ export default {
     const table = String(payload.table)
     const record = payload.record as Record<string, unknown>
 
-    // Notifica amministratore: nuova richiesta cliente
     if (table === 'richieste' && SGROVIO_NOTIFY_EMAIL) {
       const subject = `🔔 Nuova richiesta Sgrovio — ${String(record.categoria ?? 'servizio')}`
       const html = layout(
@@ -70,7 +70,6 @@ export default {
       return Response.json({ ok: true, sent: 'admin-richiesta' })
     }
 
-    // Notifica amministratore: nuovo professionista
     if (table === 'professionisti' && SGROVIO_NOTIFY_EMAIL) {
       const subject = `👷 Nuovo professionista Sgrovio — ${String(record.categoria ?? 'categoria')}`
       const html = layout(
@@ -83,7 +82,6 @@ export default {
       return Response.json({ ok: true, sent: 'admin-professionista' })
     }
 
-    // Notifica professionista: nuovo matching proposto
     if (table === 'matching') {
       if (String(record.stato ?? '') !== 'proposto') {
         return Response.json({ ok: true, skipped: 'Matching non proposto' })

@@ -114,11 +114,27 @@ export default {
       }
 
       const nome = pro.attivita || pro.nome || 'professionista'
-      const score = record.punteggio != null ? `${esc(record.punteggio)}%` : 'compatibile'
-      const subject = `Nuova richiesta Sgrovio: ${richiesta.categoria} a ${richiesta.comune}`
+      const score = record.punteggio != null ? `${esc(record.punteggio)}%` : 'Compatibile'
+      const zona = `${esc(richiesta.comune || 'Zona non indicata')}${richiesta.cap ? ` (${esc(richiesta.cap)})` : ''}`
+      const tempistica = esc(richiesta.urgenza || 'Non indicata')
+      const budget = richiesta.budget ? esc(richiesta.budget) : 'Non indicato'
+      const subject = `Nuova richiesta Sgrovio · ${richiesta.categoria} · ${richiesta.comune}`
+
       const html = layout(
-        'Hai una nuova richiesta compatibile',
-        `<p>Ciao <strong>${esc(nome)}</strong>,</p><p>Sgrovio ha trovato una nuova richiesta compatibile con la tua attività.</p><div style="background:#f7f5f0;border-radius:12px;padding:16px;margin:18px 0"><p style="margin:0 0 9px"><strong>Servizio:</strong> ${esc(richiesta.categoria)}</p><p style="margin:0 0 9px"><strong>Zona:</strong> ${esc(richiesta.comune)} ${richiesta.cap ? `(${esc(richiesta.cap)})` : ''}</p><p style="margin:0 0 9px"><strong>Tempistica:</strong> ${esc(richiesta.urgenza || 'Non indicata')}</p><p style="margin:0"><strong>Compatibilità:</strong> ${score}</p></div><p>Accedi alla tua Area Professionista per vedere i dettagli e decidere se accettare o rifiutare. I contatti del cliente vengono mostrati solo dopo l'accettazione.</p>`,
+        'Nuova richiesta compatibile',
+        `<p>Ciao <strong>${esc(nome)}</strong>,</p>
+        <p>Abbiamo trovato una nuova richiesta che potrebbe essere adatta alla tua attività.</p>
+        <div style="background:#f7f5f0;border:1px solid #e7e3dc;border-radius:14px;padding:18px;margin:20px 0">
+          <div style="display:grid;gap:10px">
+            <div><span style="color:#777;font-size:12px;text-transform:uppercase;letter-spacing:.04em">Servizio</span><br><strong>${esc(richiesta.categoria)}</strong></div>
+            <div><span style="color:#777;font-size:12px;text-transform:uppercase;letter-spacing:.04em">Zona</span><br><strong>${zona}</strong></div>
+            <div><span style="color:#777;font-size:12px;text-transform:uppercase;letter-spacing:.04em">Tempistica</span><br><strong>${tempistica}</strong></div>
+            <div><span style="color:#777;font-size:12px;text-transform:uppercase;letter-spacing:.04em">Budget</span><br><strong>${budget}</strong></div>
+            <div><span style="color:#777;font-size:12px;text-transform:uppercase;letter-spacing:.04em">Compatibilità</span><br><strong>${score}</strong></div>
+          </div>
+        </div>
+        <p><strong>Nessun obbligo di accettazione.</strong> Accedi alla tua Area Professionista per leggere i dettagli e decidere se valutarla.</p>
+        <p style="font-size:13px;color:#666">La richiesta potrebbe essere stata proposta anche ad altri professionisti compatibili. I contatti del cliente vengono mostrati solo dopo l'accettazione.</p>`,
         'Visualizza la richiesta',
         PRO_AREA_URL,
       )

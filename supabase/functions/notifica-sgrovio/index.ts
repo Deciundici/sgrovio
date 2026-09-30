@@ -2,8 +2,8 @@ import { withSupabase } from 'npm:@supabase/server@^1'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SGROVIO_NOTIFY_EMAIL = Deno.env.get('SGROVIO_NOTIFY_EMAIL')
-// Finché sgrovio.it non è verificato in Resend, usa il sender già funzionante.
-const FROM_EMAIL = 'Sgrovio <onboarding@resend.dev>'
+const FROM_EMAIL = 'Sgrovio <notifiche@sgrovio.it>'
+const REPLY_TO = 'info@sgrovio.it'
 const PRO_AREA_URL = 'https://sgrovio.it/professionista.html'
 const ADMIN_URL = 'https://sgrovio.it/admin.html'
 
@@ -28,6 +28,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [to],
+      reply_to: REPLY_TO,
       subject,
       html,
     }),
